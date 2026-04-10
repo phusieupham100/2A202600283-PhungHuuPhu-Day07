@@ -28,6 +28,12 @@ SAMPLE_FILES = [
 ]
 
 
+def _safe_console_text(text: str) -> str:
+    """Best-effort conversion for terminals with limited encoding support."""
+    encoding = sys.stdout.encoding or "utf-8"
+    return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+
+
 def load_documents_from_files(file_paths: list[str]) -> list[Document]:
     """Load documents from file paths for the manual demo."""
     allowed_extensions = {".md", ".txt"}
@@ -109,13 +115,14 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
     search_results = store.search(query, top_k=3)
     for index, result in enumerate(search_results, start=1):
         print(f"{index}. score={result['score']:.3f} source={result['metadata'].get('source')}")
-        print(f"   content preview: {result['content'][:120].replace(chr(10), ' ')}...")
+        preview = result["content"][:120].replace(chr(10), " ")
+        print(f"   content preview: {_safe_console_text(preview)}...")
 
     print("\n=== KnowledgeBaseAgent Test ===")
     agent = KnowledgeBaseAgent(store=store, llm_fn=demo_llm)
     print(f"Question: {query}")
     print("Agent answer:")
-    print(agent.answer(query, top_k=3))
+    print(_safe_console_text(agent.answer(query, top_k=3)))
     return 0
 
 
